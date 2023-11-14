@@ -1,66 +1,43 @@
-import dotenv from 'dotenv';
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import express from 'express';
-import firebase from 'firebase';
-
-
-dotenv.config();
-
-app.get('/', (req, res) => {
-    res.send('Hello, world!');
-  });
-
-  app.listen(3000, () => {
-    console.log('Server is running on port 3000');
-  });
-  
-
-const firebaseConfig = {
-  apiKey: process.env.apiKey,
-  authDomain: process.env.authDomain,
-  projectId: process.env.projectId,
-  storageBucket: process.env.storageBucket,
-  messagingSenderId: process.env.measurementId,
-  appId: process.env.appId,
-  measurementId: process.env.measurementId
-};
-
-firebase.initializeApp(firebaseConfig);
+/* eslint-disable no-undef */
+const express = require('express');
 
 const app = express();
 
-app.get('/', (req, res) => {
-  res.send('Hello, world!');
+const admin = require("firebase-admin");
+
+var serviceAccount = require("./firebase-admin-sdk.json"); // Your own service account
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
 });
-
-app.get('/users', (req, res) => {
-  const usersRef = firebase.database().ref('users');
-
-  usersRef.on('value', (snapshot) => {
-    res.send(snapshot.val());
-  });
-});
-
-app.post('/users', (req, res) => {
-  const name = req.body.name;
-  const email = req.body.email;
-
-  const userRef = firebase.database().ref('users').push();
-  userRef.set({
-    name,
-    email,
+  
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => {
+    console.log(`Server working on port: ${port}`);
   });
 
-  res.send({
-    message: 'User created',
+  const db = admin.firestore();
+
+// Get information
+app.get("/data", async (req, res) => {
+    try {
+      const data = [];
+      const snapshot = await db.collection("todo-list").get();
+      
+      snapshot.forEach((doc) => {
+        data.push(doc.data());
+      });
+  
+      res.json(data);
+    } catch (error) {
+      console.error("Error obtaining data:", error);
+      res.status(500).send("Internal Server Error");
+    }
   });
-});
 
-app.listen(3000, () => {
-  console.log('Server is running on port 3000');
+// Add data
+app.post("/AddData", async (req, res) => {
+  const newData = req.body;
+  await db.collection("todo-list").add(newData);
+  res.send("Data added successfully");
 });
-
-// Initialize Firebase
-const App = initializeApp(firebaseConfig);
-const analytics = getAnalytics(App);
