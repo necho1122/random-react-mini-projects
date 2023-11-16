@@ -1,42 +1,50 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 
 function ToDoList() {
 	const [tasks, setTasks] = useState([]);
 
-	useEffect(() => {
-		fetch('http://localhost:3000/data', { mode: 'cors' })
+	fetch('http://localhost:3000/data', { mode: 'cors' })
+		.then((response) => {
+			if (!response.ok) {
+				throw new Error('Network response was not ok');
+			}
+			return response.json();
+		})
+		.then((data) => {
+			setTasks(data);
+		})
+		.catch((error) => console.error('Error:', error));
+
+	const addData = async (data) => {
+		try {
+			const response = await axios.post('http://localhost:3000/AddData', data);
+			console.log('Data added successfully:', response.data);
+		} catch (error) {
+			console.error('Error adding data:', error);
+		}
+	};
+
+	const deleteData = async (id) => {
+		axios
+			.delete(`http://localhost:3000/DeleteData?id=${id}`)
 			.then((response) => {
-				if (!response.ok) {
-					throw new Error('Network response was not ok');
-				}
-				return response.json();
+				console.log(response.data);
 			})
-			.then((data) => {
-        setTasks(data);
-      }
-			)
-			.catch((error) => console.error('Error:', error));
-	}, []);
+			.catch((error) => {
+				console.error('Error:', error);
+			});
+	};
 
-  const addData = async (data) => {
-  try {
-    const response = await axios.post('http://localhost:3000/AddData', data);
-    console.log('Data added successfully:', response.data);
-  } catch (error) {
-    console.error('Error adding data:', error);
-  }
-};
+	const addTask = () => {
+		let newTask = document.querySelector('input').value;
+		addData({ name: newTask, id: tasks.length + 1 });
+		document.querySelector('input').innerHTML = '';
+	};
 
-const addTask = () => {
-  const newTask = document.querySelector('input').value;
-  addData({ name: newTask, id: tasks.length + 1 });
-};
+	const deleteTask = (id) => {
 
-	const deleteTask = (index) => {
-		const newTaskList = [...tasks];
-		newTaskList.splice(index, 1);
-		setTasks(newTaskList);
+		deleteData(id);
 	};
 
 	return (
@@ -56,7 +64,12 @@ const addTask = () => {
 					return (
 						<li key={index}>
 							{task.name}
-							<button onClick={() => deleteTask(index)}>Delete</button>
+							<button
+								id='delete-button'
+								onClick={() => deleteTask(task.id)}
+							>
+								Delete
+							</button>
 						</li>
 					);
 				})}

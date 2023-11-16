@@ -45,3 +45,10 @@ app.post("/AddData", async (req, res) => {
   await db.collection("todo-list").add(newData);
   res.send("Data added successfully");
 });
+
+app.delete("/DeleteData", async (req, res) => {
+  const id = req.query.id;
+  const doc = db.collection("todo-list").doc(id);
+  await doc.delete();
+  res.send("Data deleted successfully");
+});
